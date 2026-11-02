@@ -7,7 +7,9 @@ RUN pip install --upgrade pip && pip install .
 COPY app ./app
 COPY alembic ./alembic
 COPY alembic.ini docker-entrypoint.sh ./
-RUN chmod +x docker-entrypoint.sh && mkdir -p /app/uploads && chown -R app:app /app
+# Strip CR characters in case the file was checked out with Windows line endings.
+RUN sed -i 's/\r$//' docker-entrypoint.sh && chmod +x docker-entrypoint.sh \
+    && mkdir -p /app/uploads && chown -R app:app /app
 USER app
 EXPOSE 8000
 ENTRYPOINT ["./docker-entrypoint.sh"]
