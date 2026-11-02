@@ -170,3 +170,22 @@ def test_expired_user_token_requires_relink(alice, db):
     r = alice.get("/api/integrations/blizzard/account-characters")
     assert r.status_code == 400 and "Re-link" in r.json()["detail"]
     assert db.scalar(select(SyncJob)) is None
+
+
+def test_item_metadata_enrichment(alice, db):
+    from app.models import Item, LootEvent
+
+    gid = create_group(alice)["id"]
+    alice.post("/api/ingest/envelope", json={"format": "azeroth-chronicles/v1", "characters": [
+        {"guid": "P-9", "name": "Looter", "realm": "Dawnforge"}], "records": [
+        {"id": "l1", "type": "loot", "character_guid": "P-9", "item_id": 9100001, "item_name": "Echo", "quality": 5,
+         "looted_at": 1772660000},
+        {"id": "l2", "type": "loot", "character_guid": "P-9", "item_id": 424242, "item_name": "Unknown", "quality": 5,
+         "looted_at": 1772660000}]})
+    assert blizzard_sync.enrich_items(db, MockBlizzardAdapter()) == 1
+    item = db.get(Item, 9100001)
+    assert item.metadata_source == "blizzard_api" and item.icon_url.endswith("inv_sword_2h_mock.jpg")
+    assert db.get(Item, 424242).metadata_fetched_at is not None  # 404 recorded, not retried forever
+    loot = db.scalar(select(LootEvent).where(LootEvent.item_id == 9100001))
+    assert loot.icon_url == item.icon_url
+    assert alice.get(f"/api/groups/{gid}/loot").json()["total"] == 2

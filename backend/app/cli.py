@@ -25,6 +25,10 @@ def sync_all() -> None:
                 print(f"[sync] {user.display_name}: {job.status} {job.stats}")
             except BlizzardError as exc:
                 print(f"[sync] {user.display_name}: failed: {exc}")
+        try:
+            print(f"[sync] item metadata enriched: {blizzard_sync.enrich_items(db, adapter)}")
+        except BlizzardError as exc:
+            print(f"[sync] item enrichment skipped: {exc}")
         for (gid,) in db.execute(select(Group.id)).all():
             recompute_group(db, gid, only_open=True)
 
