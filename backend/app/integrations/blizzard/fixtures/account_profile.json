@@ -1,0 +1,35 @@
+{
+  "_links": {"self": {"href": "https://us.api.blizzard.com/profile/user/wow?namespace=profile-us"}},
+  "id": 100001,
+  "wow_accounts": [
+    {
+      "id": 1,
+      "characters": [
+        {
+          "character": {"href": "https://us.api.blizzard.com/profile/wow/character/dawnforge/aerindel?namespace=profile-us"},
+          "protected_character": {"href": "https://us.api.blizzard.com/profile/user/wow/protected-character/1-70000001?namespace=profile-us"},
+          "name": "Aerindel",
+          "id": 70000001,
+          "realm": {"key": {"href": "..."}, "name": "Dawnforge", "id": 9001, "slug": "dawnforge"},
+          "playable_class": {"key": {"href": "..."}, "name": "Hunter", "id": 3},
+          "playable_race": {"key": {"href": "..."}, "name": "Night Elf", "id": 4},
+          "gender": {"type": "FEMALE", "name": "Female"},
+          "faction": {"type": "ALLIANCE", "name": "Alliance"},
+          "level": 80
+        },
+        {
+          "character": {"href": "https://us.api.blizzard.com/profile/wow/character/dawnforge/brumgar?namespace=profile-us"},
+          "protected_character": {"href": "..."},
+          "name": "Brumgar",
+          "id": 70000002,
+          "realm": {"key": {"href": "..."}, "name": "Dawnforge", "id": 9001, "slug": "dawnforge"},
+          "playable_class": {"key": {"href": "..."}, "name": "Warrior", "id": 1},
+          "playable_race": {"key": {"href": "..."}, "name": "Dwarf", "id": 3},
+          "gender": {"type": "MALE", "name": "Male"},
+          "faction": {"type": "ALLIANCE", "name": "Alliance"},
+          "level": 72
+        }
+      ]
+    }
+  ]
+}

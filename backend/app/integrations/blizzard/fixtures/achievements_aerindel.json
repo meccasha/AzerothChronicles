@@ -1,0 +1,10 @@
+{
+  "total_quantity": 4,
+  "total_points": 14250,
+  "achievements": [
+    {"id": 6, "achievement": {"key": {"href": "..."}, "name": "Level 10", "id": 6}, "criteria": {"id": 1, "is_completed": true}, "completed_timestamp": 1420070400000},
+    {"id": 9000101, "achievement": {"key": {"href": "..."}, "name": "Mock: Ashen Vanguard", "id": 9000101}, "criteria": {"id": 2, "is_completed": true}, "completed_timestamp": 1761800000000},
+    {"id": 9000102, "achievement": {"key": {"href": "..."}, "name": "Mock: Glory of the Dawnforge Raider", "id": 9000102}, "criteria": {"id": 3, "is_completed": true}},
+    {"id": 9000103, "achievement": {"key": {"href": "..."}, "name": "Mock: In-progress Achievement", "id": 9000103}, "criteria": {"id": 4, "is_completed": false}}
+  ]
+}

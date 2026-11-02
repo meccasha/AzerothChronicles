@@ -1,0 +1,16 @@
+{
+  "id": 70000001,
+  "name": "Aerindel",
+  "gender": {"type": "FEMALE", "name": "Female"},
+  "faction": {"type": "ALLIANCE", "name": "Alliance"},
+  "race": {"key": {"href": "..."}, "name": "Night Elf", "id": 4},
+  "character_class": {"key": {"href": "..."}, "name": "Hunter", "id": 3},
+  "active_spec": {"key": {"href": "..."}, "name": "Marksmanship", "id": 254},
+  "realm": {"key": {"href": "..."}, "name": "Dawnforge", "id": 9001, "slug": "dawnforge"},
+  "level": 80,
+  "experience": 0,
+  "achievement_points": 14250,
+  "last_login_timestamp": 1761900000000,
+  "average_item_level": 662,
+  "equipped_item_level": 660
+}

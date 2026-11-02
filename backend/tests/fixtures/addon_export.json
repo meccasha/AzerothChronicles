@@ -1,0 +1,17 @@
+{
+  "format": "azeroth-chronicles/v1",
+  "source": "addon",
+  "addon_version": "1.0.0",
+  "exported_at": 1772665200,
+  "characters": [
+    {"guid": "Player-3676-0DEF5678", "name": "Groupmate", "realm": "Area 52", "region": "us", "class": "Priest",
+     "race": "Draenei", "faction": "Alliance", "level": 80, "spec": "Holy"}
+  ],
+  "records": [
+    {"id": "enc-3676-0DEF5678-3009-15-1772660001", "type": "encounter", "character_guid": "Player-3676-0DEF5678",
+     "encounter_id": 3009, "encounter_name": "Test Colossus", "instance_name": "Fixture Citadel",
+     "instance_type": "raid", "difficulty_id": 15, "difficulty_name": "Heroic", "group_size": 18, "success": false,
+     "start_time": 1772659700, "end_time": 1772660001, "deaths": 2,
+     "roster": [{"name": "Thalindra", "realm": "Area52"}]}
+  ]
+}

@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+backend/uploads/
+# Node
+node_modules/
+.next/
+frontend/test-results/
+frontend/playwright-report/
+*.tsbuildinfo
+next-env.d.ts
+# Env
+.env
+.env.local
+# Companion
+companion/.venv/
+companion/config.json

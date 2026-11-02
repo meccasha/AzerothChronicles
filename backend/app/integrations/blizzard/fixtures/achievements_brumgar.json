@@ -1,0 +1,7 @@
+{
+  "total_quantity": 1,
+  "total_points": 14250,
+  "achievements": [
+    {"id": 6, "achievement": {"name": "Level 10", "id": 6}, "criteria": {"id": 1, "is_completed": true}, "completed_timestamp": 1420070400000}
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "id": 70000002,
+  "name": "Brumgar",
+  "faction": {"type": "ALLIANCE", "name": "Alliance"},
+  "race": {"name": "Dwarf", "id": 3},
+  "character_class": {"name": "Warrior", "id": 1},
+  "active_spec": {"name": "Protection", "id": 73},
+  "realm": {"name": "Dawnforge", "id": 9001, "slug": "dawnforge"},
+  "level": 72,
+  "achievement_points": 14250
+}

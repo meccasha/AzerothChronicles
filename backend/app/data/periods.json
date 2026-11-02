@@ -1,0 +1,14 @@
+{
+  "_comment": "Expansion and season windows used for filtering and seasonal awards. Dates are UTC and editable; verify against official Blizzard announcements and adjust for your region. 'end' null means ongoing.",
+  "expansions": [
+    {"key": "dragonflight", "name": "Dragonflight", "start": "2022-11-28", "end": "2024-08-26"},
+    {"key": "the_war_within", "name": "The War Within", "start": "2024-08-26", "end": "2026-03-02"},
+    {"key": "midnight", "name": "Midnight", "start": "2026-03-02", "end": null}
+  ],
+  "seasons": [
+    {"key": "tww_s1", "name": "The War Within Season 1", "expansion": "the_war_within", "start": "2024-09-10", "end": "2025-02-25"},
+    {"key": "tww_s2", "name": "The War Within Season 2", "expansion": "the_war_within", "start": "2025-03-04", "end": "2025-08-12"},
+    {"key": "tww_s3", "name": "The War Within Season 3", "expansion": "the_war_within", "start": "2025-08-12", "end": "2026-03-02"},
+    {"key": "mid_s1", "name": "Midnight Season 1", "expansion": "midnight", "start": "2026-03-17", "end": null}
+  ]
+}
