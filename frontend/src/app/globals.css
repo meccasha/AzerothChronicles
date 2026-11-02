@@ -1,0 +1,153 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* Azeroth Chronicles is a dark, candle-lit journal by design: one carefully tuned dark theme. */
+:root {
+  color-scheme: dark;
+  --background: #0a0e16;
+  --background-2: #0e131d;
+  --foreground: #ebe5d6;          /* parchment ink on night */
+  --card: #131924;
+  --card-2: #18202d;
+  --card-foreground: #ebe5d6;
+  --popover: #161d29;
+  --popover-foreground: #ebe5d6;
+  --primary: #d6a94a;            /* burnished gold */
+  --primary-foreground: #1a1206;
+  --secondary: #222b3a;
+  --secondary-foreground: #e4dfd2;
+  --muted: #1b2230;
+  --muted-foreground: #9aa3b4;
+  --accent: #262f40;
+  --accent-foreground: #f2ead8;
+  --destructive: #d0574b;
+  --border: #283142;
+  --input: #2b3446;
+  --ring: #d6a94a;
+  --gold: #d6a94a;
+  --gold-bright: #f2c86a;
+  --amber: #e89a3c;
+  --ember: #c4602f;
+  --radius: 0.75rem;
+
+  /* chart series: validated categorical slots (dark steps) vs #141925 surface */
+  --series-boss: #3987e5;
+  --series-achievement: #d95926;
+  --series-loot: #199e70;
+  --series-dungeon: #c98500;
+  --series-wipe: #d55181;
+
+  /* WoW item quality (game convention) */
+  --q-poor: #9d9d9d;
+  --q-common: #ffffff;
+  --q-uncommon: #1eff00;
+  --q-rare: #0070dd;
+  --q-epic: #a335ee;
+  --q-legendary: #ff8000;
+  --q-artifact: #e6cc80;
+  --q-heirloom: #00ccff;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-background-2: var(--background-2);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-2: var(--card-2);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-gold: var(--gold);
+  --color-gold-bright: var(--gold-bright);
+  --color-amber: var(--amber);
+  --color-ember: var(--ember);
+  --color-q-poor: var(--q-poor);
+  --color-q-common: var(--q-common);
+  --color-q-uncommon: var(--q-uncommon);
+  --color-q-rare: var(--q-rare);
+  --color-q-epic: var(--q-epic);
+  --color-q-legendary: var(--q-legendary);
+  --color-q-artifact: var(--q-artifact);
+  --color-q-heirloom: var(--q-heirloom);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-cinzel), ui-serif, Georgia, serif;
+  --animate-rise: rise 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  --animate-glow: glow 3.2s ease-in-out infinite;
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes glow {
+  0%, 100% { box-shadow: 0 0 0 1px rgb(214 169 74 / 0.35), 0 0 24px -6px rgb(214 169 74 / 0.35); }
+  50% { box-shadow: 0 0 0 1px rgb(242 200 106 / 0.6), 0 0 36px -4px rgb(242 200 106 / 0.45); }
+}
+
+@layer base {
+  * { @apply border-border outline-ring/50; }
+  html { background: var(--background); }
+  body {
+    @apply bg-background text-foreground antialiased;
+    background-image:
+      radial-gradient(1200px 600px at 15% -10%, rgb(214 169 74 / 0.07), transparent 60%),
+      radial-gradient(900px 500px at 110% 10%, rgb(57 135 229 / 0.06), transparent 60%);
+    background-attachment: fixed;
+  }
+  h1, h2, h3 { @apply font-display tracking-wide; }
+  ::selection { background: rgb(214 169 74 / 0.35); }
+}
+
+@layer components {
+  /* Subtle parchment grain (inline SVG noise; no external assets) */
+  .parchment {
+    background-image:
+      linear-gradient(180deg, rgb(255 244 214 / 0.035), rgb(255 244 214 / 0.01)),
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.9 0 0 0 0 0.8 0 0 0 0 0.6 0 0 0 0.05 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  }
+  .gold-text {
+    background: linear-gradient(180deg, #f7dc96 0%, #d6a94a 55%, #a87a2a 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .gold-border {
+    border-image: linear-gradient(135deg, #f2c86a, #8a6424 45%, #f2c86a) 1;
+  }
+  .ornament-divider {
+    @apply flex items-center gap-3 text-gold/70;
+  }
+  .ornament-divider::before, .ornament-divider::after {
+    content: "";
+    @apply h-px flex-1;
+    background: linear-gradient(90deg, transparent, rgb(214 169 74 / 0.5), transparent);
+  }
+  .timeline-rail {
+    background: linear-gradient(180deg, rgb(214 169 74 / 0.0), rgb(214 169 74 / 0.45) 8%, rgb(214 169 74 / 0.25) 92%, rgb(214 169 74 / 0));
+  }
+  .card-hover {
+    @apply transition duration-200 hover:-translate-y-0.5 hover:border-gold/40 hover:shadow-[0_8px_30px_-12px_rgb(214_169_74/0.35)];
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}

@@ -292,6 +292,13 @@ def dashboard(access: Access, db: DB):
     if not db.scalar(select(func.count(AwardResult.id)).where(AwardResult.group_id == gid)):
         engine.recompute_group(db, gid)
     month = engine.current_period("month").label
+    has_current = db.scalar(select(func.count(AwardResult.id)).where(
+        AwardResult.group_id == gid, AwardResult.period_type == "month", AwardResult.period_label == month,
+        AwardResult.winner_user_id.is_not(None)))
+    if not has_current:  # early in a month: show the most recent month that has decided awards
+        month = db.scalar(select(AwardResult.period_label).where(
+            AwardResult.group_id == gid, AwardResult.period_type == "month", AwardResult.winner_user_id.is_not(None))
+            .order_by(AwardResult.period_start.desc()).limit(1)) or month
     leaders = db.execute(select(AwardResult, User).outerjoin(User, User.id == AwardResult.winner_user_id)
                          .where(AwardResult.group_id == gid, AwardResult.period_type == "month",
                                 AwardResult.period_label == month, AwardResult.winner_user_id.is_not(None))).all()
