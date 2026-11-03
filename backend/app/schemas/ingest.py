@@ -40,6 +40,9 @@ class EncounterRecord(_Rec):
     roster: list[RosterEntry] = Field(default_factory=list, max_length=40)
     # Personal deaths observed via PLAYER_DEAD during the encounter; null = not tracked.
     deaths: int | None = Field(default=None, ge=0, le=100)
+    # Encounter Journal ids (addon >= 1.1) let the server fetch exact boss/instance artwork.
+    journal_instance_id: int | None = Field(default=None, ge=1)
+    journal_encounter_id: int | None = Field(default=None, ge=1)
 
 
 class AchievementRecord(_Rec):
@@ -60,6 +63,9 @@ class LootRecord(_Rec):
     item_class: str | None = Field(default=None, max_length=64)
     item_subclass: str | None = Field(default=None, max_length=64)
     item_level: int | None = Field(default=None, ge=0, le=2000)
+    # The client exposes icons as FileDataIDs; the image URL is resolved server-side via Battle.net.
+    icon_file_id: int | None = Field(default=None, ge=1)
+    # Legacy (addon 1.0): stringified FileDataID, or an icon texture name such as "inv_sword_39".
     icon: str | None = Field(default=None, max_length=200)
     encounter_id: int | None = None
     instance_name: str | None = Field(default=None, max_length=160)
@@ -72,13 +78,16 @@ class CollectibleRecord(_Rec):
     collectible_id: int
     name: str = Field(max_length=200)
     item_id: int | None = None
+    icon_file_id: int | None = Field(default=None, ge=1)
     learned_at: int
 
 
 class DungeonRecord(_Rec):
     type: Literal["dungeon_complete"]
-    map_id: int
+    map_id: int = Field(description="Challenge-mode map id")
     name: str = Field(max_length=160)
+    instance_id: int | None = Field(default=None, description="Instance map id from GetInstanceInfo")
+    journal_instance_id: int | None = Field(default=None, ge=1)
     keystone_level: int | None = Field(default=None, ge=0, le=50)
     on_time: bool | None = None
     completed_at: int

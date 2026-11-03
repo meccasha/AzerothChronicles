@@ -307,27 +307,3 @@ def unlink(db: Session, user: User) -> None:
         src.status = "disabled"
     db.commit()
 
-
-def enrich_items(db: Session, adapter: BlizzardAdapter, region: str = "us", limit: int = 50) -> int:
-    """Fill in icon/class metadata for addon-reported items from the Game Data API (best effort)."""
-    from app.models import Item, LootEvent
-
-    items = db.scalars(select(Item).where(Item.metadata_fetched_at.is_(None), Item.is_demo.is_(False))
-                       .limit(limit)).all()
-    done = 0
-    for item in items:
-        try:
-            info = adapter.item(region=region, item_id=item.id)
-        except BlizzardError:
-            item.metadata_fetched_at = _now()  # don't retry forever; the addon data remains authoritative
-            continue
-        item.icon_url = info.icon_url or item.icon_url
-        item.item_class = info.item_class or item.item_class
-        item.item_subclass = info.item_subclass or item.item_subclass
-        item.inventory_type = info.inventory_type
-        item.metadata_source, item.metadata_fetched_at = "blizzard_api", _now()
-        for loot in db.scalars(select(LootEvent).where(LootEvent.item_id == item.id, LootEvent.icon_url.is_(None))):
-            loot.icon_url = item.icon_url
-        done += 1
-    db.commit()
-    return done

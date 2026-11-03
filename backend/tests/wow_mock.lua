@@ -65,7 +65,17 @@ function C_Item.GetItemInfo(link)
 end
 function C_Item.GetDetailedItemLevelInfo() return 639 end
 Item = { CreateFromItemLink = function(_, link) return { ContinueOnItemLoad = function(_, cb) cb() end } end }
-C_MountJournal = { GetMountInfoByID = function(id) return "Fixture Gryphon", 100 end }
+C_MountJournal = { GetMountInfoByID = function(id) return "Fixture Gryphon", 100, 132265 end }
+C_Map = { GetBestMapForUnit = function() return T.uiMap end }
+T.uiMap = 2420
+T.journal = { [2420] = 9901, [2600] = 9902 }
+function EJ_GetInstanceForMap(uiMap) return T.journal[uiMap] or 0 end
+T.ejEncounters = { [9901] = { { "Test Colossus", 99011, 3009 }, { "Other Boss", 99012, 3010 } } }
+function EJ_GetEncounterInfoByIndex(i, jInstance)
+  local e = (T.ejEncounters[jInstance] or {})[i]
+  if not e then return nil end
+  return e[1], "desc", e[2], 1, "link", jInstance, e[3], 2769
+end
 C_ChallengeMode = {
   GetChallengeCompletionInfo = function() return { mapChallengeModeID = 501, level = 12, time = 1700000, onTime = true } end,
   GetMapUIInfo = function() return "Fixture Depths" end,

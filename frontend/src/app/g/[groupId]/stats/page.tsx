@@ -8,6 +8,7 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 import { AXIS, ChartCard, ChartTooltip, GRID, SERIES_HEX, SURFACE } from "@/components/charts/chart-kit";
 import { ACTIVITY_SERIES, GroupedBars, RankBars, StackedBars, TrendLine, bucketLabel } from "@/components/charts/charts";
 import { MemberAvatar } from "@/components/common/avatar";
+import { GameImage } from "@/components/common/game-image";
 import { ErrorState, Notice, PageHeader, StatTile } from "@/components/common/misc";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -255,8 +256,15 @@ export default function StatsPage() {
                 {prog.data.encounters.map((r) => (
                   <tr key={`${r.encounter_id}-${r.difficulty}`} className="border-t border-border/60">
                     <td className="py-2 pr-3">
-                      <span className="block">{r.name}</span>
-                      <span className="text-xs text-muted-foreground">{r.instance_name}</span>
+                      <span className="flex items-center gap-3">
+                        <span className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-secondary text-muted-foreground">
+                          <GameImage src={r.image_url} className="size-full object-cover object-top" fallback={<Swords className="size-4" aria-hidden />} />
+                        </span>
+                        <span>
+                          <span className="block">{r.name}</span>
+                          <span className="text-xs text-muted-foreground">{r.instance_name}</span>
+                        </span>
+                      </span>
                     </td>
                     <td className="px-3">
                       <Badge variant={r.difficulty.toLowerCase().includes("mythic") ? "default" : "secondary"}>{r.difficulty}</Badge>

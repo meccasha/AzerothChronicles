@@ -182,7 +182,9 @@ def test_item_metadata_enrichment(alice, db):
          "looted_at": 1772660000},
         {"id": "l2", "type": "loot", "character_guid": "P-9", "item_id": 424242, "item_name": "Unknown", "quality": 5,
          "looted_at": 1772660000}]})
-    assert blizzard_sync.enrich_items(db, MockBlizzardAdapter()) == 1
+    from app.services.game_media import resolve_media
+
+    resolve_media(db, MockBlizzardAdapter())  # (ingestion already scheduled it; this run is a no-op)
     item = db.get(Item, 9100001)
     assert item.metadata_source == "blizzard_api" and item.icon_url.endswith("inv_sword_2h_mock.jpg")
     assert db.get(Item, 424242).metadata_fetched_at is not None  # 404 recorded, not retried forever

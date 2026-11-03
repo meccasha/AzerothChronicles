@@ -9,6 +9,12 @@ Endpoint shapes follow the official Battle.net documentation (develop.battle.net
              GET /profile/wow/character/{realmSlug}/{name}/achievements
              GET /profile/wow/character/{realmSlug}/{name}/character-media
   Game data: GET /data/wow/achievement/{id}, /data/wow/item/{id}, /data/wow/media/item/{id}
+  Media:     GET /data/wow/media/achievement/{id}            (asset "icon")
+             GET /data/wow/journal-instance/index, /data/wow/journal-instance/{id}
+             GET /data/wow/media/journal-instance/{id}       (asset "tile")
+             GET /data/wow/journal-encounter/{id}            (creatures[].creature_display.id)
+             GET /data/wow/media/creature-display/{id}       (asset "zoom")
+             GET /data/wow/mount/{id}                        (creature_displays[].id)
 Tokens are sent as an Authorization: Bearer header (the access_token query parameter is deprecated).
 See docs/blizzard-integration.md for the verification checklist; field access is defensive so that a
 changed response shape degrades to a clear error instead of fabricated data.
@@ -35,6 +41,8 @@ from app.integrations.blizzard.types import (
     CharacterProfile,
     CharacterSummary,
     ItemInfo,
+    JournalEncounterInfo,
+    JournalInstanceInfo,
     TokenSet,
 )
 
@@ -52,6 +60,13 @@ def _api_host(region: str) -> str:
 def _ms_to_dt(value: Any) -> datetime | None:
     if isinstance(value, int | float) and value > 0:
         return datetime.fromtimestamp(value / 1000, UTC)
+    return None
+
+
+def _asset(media: Any, key: str) -> str | None:
+    for a in (media or {}).get("assets", []) or []:
+        if a.get("key") == key:
+            return a.get("value")
     return None
 
 
@@ -258,3 +273,53 @@ class LiveBlizzardAdapter:
         return ItemInfo(id=item_id, name=_name(d) or str(item_id), quality=quality,
                         item_class=_name(d.get("item_class")), item_subclass=_name(d.get("item_subclass")),
                         inventory_type=_name(d.get("inventory_type")), icon_url=icon)
+
+    # ------------------------------------------------------------------ Media
+    def achievement_icon(self, *, region: str, achievement_id: int) -> str | None:
+        return _asset(self._get(region, f"/data/wow/media/achievement/{achievement_id}", "static"), "icon")
+
+    def journal_instance_index(self, *, region: str) -> list[tuple[int, str]]:
+        d = self._get(region, "/data/wow/journal-instance/index", "static")
+        return [(int(i["id"]), _name(i) or "") for i in d.get("instances", []) or [] if i.get("id")]
+
+    def journal_instance(self, *, region: str, journal_instance_id: int) -> JournalInstanceInfo:
+        d = self._get(region, f"/data/wow/journal-instance/{journal_instance_id}", "static")
+        image = None
+        try:
+            image = _asset(self._get(region, f"/data/wow/media/journal-instance/{journal_instance_id}", "static"),
+                           "tile")
+        except BlizzardError:
+            pass
+        return JournalInstanceInfo(
+            id=journal_instance_id, name=_name(d) or str(journal_instance_id),
+            map_id=(d.get("map") or {}).get("id"), category=(d.get("category") or {}).get("type"),
+            encounters=[(int(e["id"]), _name(e) or "") for e in d.get("encounters", []) or [] if e.get("id")],
+            image_url=image,
+        )
+
+    def _creature_display_image(self, region: str, display_id: int | None) -> str | None:
+        if not display_id:
+            return None
+        try:
+            return _asset(self._get(region, f"/data/wow/media/creature-display/{display_id}", "static"), "zoom")
+        except BlizzardError:
+            return None
+
+    def journal_encounter(self, *, region: str, journal_encounter_id: int) -> JournalEncounterInfo:
+        d = self._get(region, f"/data/wow/journal-encounter/{journal_encounter_id}", "static")
+        display = None
+        for c in d.get("creatures", []) or []:
+            display = (c.get("creature_display") or {}).get("id")
+            if display:
+                break
+        return JournalEncounterInfo(
+            id=journal_encounter_id, name=_name(d) or str(journal_encounter_id),
+            journal_instance_id=(d.get("instance") or {}).get("id"), creature_display_id=display,
+            image_url=self._creature_display_image(region, display),
+        )
+
+    def mount_image(self, *, region: str, mount_id: int) -> str | None:
+        d = self._get(region, f"/data/wow/mount/{mount_id}", "static")
+        displays = d.get("creature_displays", []) or []
+        return self._creature_display_image(region, displays[0].get("id") if displays else None)
+

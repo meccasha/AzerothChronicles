@@ -4,7 +4,7 @@
 -- (addons cannot). A website upload or the companion app moves the data out of the game.
 
 local ADDON, ns = ...
-ns.VERSION = "1.0.0"
+ns.VERSION = "1.1.0"
 ns.SCHEMA = 1
 ns.MAX_RECORDS = 5000
 

@@ -45,6 +45,12 @@ def fixture_handler(request: httpx.Request) -> httpx.Response:
         return _fixture(f"item_{m.group(1)}")
     if m := re.fullmatch(r"/data/wow/media/item/(\d+)", path):
         return _fixture(f"item_media_{m.group(1)}")
+    if path == "/data/wow/journal-instance/index":
+        return _fixture("journal_instance_index")
+    kinds = "achievement|journal-instance|journal-encounter|creature-display|mount"
+    if m := re.fullmatch(rf"/data/wow/(media/)?({kinds})/(\d+)", path):
+        media, kind, ident = m.groups()
+        return _fixture(f"{'media_' if media else ''}{kind.replace('-', '_')}_{ident}")
     return _fixture("missing")
 
 

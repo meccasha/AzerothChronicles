@@ -6,10 +6,11 @@ import { useParams, useRouter } from "next/navigation";
 import * as React from "react";
 import { CharacterName, CharacterPortrait, MemberAvatar } from "@/components/common/avatar";
 import { ProvenanceBadges } from "@/components/common/badges";
-import { ItemIcon } from "@/components/common/item-icon";
+import { GameImage } from "@/components/common/game-image";
 import { ErrorState, useToast } from "@/components/common/misc";
 import { eventSubtitle } from "@/components/timeline/event-card";
-import { EVENT_ACCENT, EVENT_ICON } from "@/components/timeline/event-meta";
+import { EventArt } from "@/components/timeline/event-art";
+import { EVENT_ACCENT } from "@/components/timeline/event-meta";
 import { Reactions } from "@/components/timeline/reactions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -39,7 +40,6 @@ export default function EventDetailPage() {
   if (ev.isError) return <ErrorState error={ev.error} />;
   if (!ev.data) return <Skeleton className="h-96 rounded-xl" />;
   const e = ev.data;
-  const Icon = EVENT_ICON[e.event_type];
   const accent = e.event_type === "loot" && e.extra.quality ? qualityColor(e.extra.quality) : EVENT_ACCENT[e.event_type];
   const special = !!e.highlight && MAJOR_HIGHLIGHTS.has(e.highlight);
 
@@ -56,20 +56,20 @@ export default function EventDetailPage() {
         <ArrowLeft className="size-4" /> Back to the timeline
       </Link>
 
-      <Card className={cn("overflow-hidden", special && "border-gold/50 animate-glow")}>
+      <Card className={cn("overflow-hidden", special && "border-gold/50 glow")}>
         {special ? (
           <div className="flex items-center gap-2 border-b border-gold/30 bg-gradient-to-r from-gold/25 via-gold/5 to-transparent px-6 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-gold-bright">
             <Sparkles className="size-4" /> {e.extra.milestone ?? HIGHLIGHT_LABEL[e.highlight!]}
           </div>
         ) : null}
-        <div className="flex flex-col gap-5 p-6 sm:flex-row">
-          {e.event_type === "loot" ? (
-            <ItemIcon quality={String(e.extra.quality ?? "epic")} category={e.extra.category as string} iconUrl={e.item?.icon_url} size={72} />
-          ) : (
-            <span className="flex size-[72px] shrink-0 items-center justify-center rounded-xl" style={{ color: accent, background: `color-mix(in srgb, ${accent} 14%, transparent)`, boxShadow: `inset 0 0 0 1px color-mix(in srgb, ${accent} 45%, transparent)` }}>
-              <Icon className="size-8" />
-            </span>
-          )}
+        {e.scene_url ? (
+          <div className="relative h-36 overflow-hidden sm:h-44" aria-hidden>
+            <GameImage src={e.scene_url} className="size-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-card via-card/40 to-transparent" />
+          </div>
+        ) : null}
+        <div className={cn("flex flex-col gap-5 p-6 sm:flex-row", e.scene_url && "-mt-14 relative")}>
+          <EventArt event={e} size={88} />
           <div className="min-w-0 flex-1">
             <p className="text-xs font-semibold uppercase tracking-[0.18em]" style={{ color: accent }}>
               {EVENT_TYPE_LABEL[e.event_type]}

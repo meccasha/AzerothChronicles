@@ -123,7 +123,7 @@ export interface AdventureEvent {
   pinned: boolean;
   favorite: boolean;
   achievement: { id: number; name: string; points: number; icon_url: string | null } | null;
-  encounter: { id: number; name: string; instance_name: string | null; instance_type: string } | null;
+  encounter: { id: number; name: string; instance_name: string | null; instance_type: string; image_url?: string | null } | null;
   item: { id: number; name: string; quality: string; icon_url: string | null; item_class: string | null } | null;
   extra: Record<string, unknown> & {
     milestone?: string;
@@ -138,6 +138,11 @@ export interface AdventureEvent {
     duration_s?: number | null;
     encounter_name?: string;
   };
+  /** Game artwork from Blizzard's CDN (null when unknown). */
+  image_url: string | null;
+  image_kind: "icon" | "portrait" | "scene" | null;
+  /** Dungeon/raid artwork used as a card backdrop. */
+  scene_url: string | null;
   participants: Participant[];
   reactions: ReactionSummary[];
   comment_count: number;
@@ -244,6 +249,7 @@ export interface ProgressionRow {
   wipes: number;
   first_kill_at: string | null;
   first_attempt_at: string | null;
+  image_url?: string | null;
 }
 
 export interface Standing {

@@ -50,6 +50,9 @@ Key properties:
   group-mate's roster at the time and matched to a known character of a group member), `claimed`
   (manual). Unknown roster names are never attributed.
 * **Backfill vs live** for Battle.net achievements is described in [blizzard-integration.md](blizzard-integration.md).
+* **Game artwork** (item/achievement icons, boss portraits, dungeon art) is resolved asynchronously after
+  ingestion from Blizzard's Game Data API; only Blizzard render-CDN URLs are stored. See
+  [blizzard-integration.md](blizzard-integration.md#game-artwork-icons-boss-portraits-dungeon-art).
 * **Importance** (0–100, `app/services/importance.py`) decides default timeline visibility only; nothing
   below the threshold is deleted, and the UI shows how many minor events are hidden.
 
@@ -84,6 +87,8 @@ erDiagram
   adventure_events }o--o| achievements : ""
   adventure_events }o--o| encounters : ""
   adventure_events }o--o| items : ""
+  game_instances ||--o{ encounters : "dungeon / raid"
+  game_instances |o--o{ adventure_events : artwork
   groups ||--o{ encounter_attempts : pulls
   encounters ||--o{ encounter_attempts : ""
   encounter_attempts ||--o{ encounter_attempt_participants : ""

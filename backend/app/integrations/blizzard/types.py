@@ -93,3 +93,22 @@ class ItemInfo:
 class CharacterAchievements:
     total_points: int | None
     completions: list[AchievementCompletion] = field(default_factory=list)
+
+
+@dataclass
+class JournalInstanceInfo:
+    id: int
+    name: str
+    map_id: int | None = None
+    category: str | None = None  # RAID | DUNGEON | ...
+    encounters: list[tuple[int, str]] = field(default_factory=list)
+    image_url: str | None = None
+
+
+@dataclass
+class JournalEncounterInfo:
+    id: int
+    name: str
+    journal_instance_id: int | None = None
+    creature_display_id: int | None = None
+    image_url: str | None = None

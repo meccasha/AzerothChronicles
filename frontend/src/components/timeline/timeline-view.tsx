@@ -42,7 +42,7 @@ export function TimelineView({
               <span className="relative z-10 flex size-8 items-center justify-center rounded-full border border-gold/50 bg-background shadow-[0_0_0_4px_var(--background)] sm:size-10">
                 <span className="size-2.5 rotate-45 bg-gold shadow-[0_0_10px_var(--gold)]" />
               </span>
-              <h2 className="rounded-md bg-background/85 px-2 py-0.5 font-display text-sm font-semibold uppercase tracking-[0.14em] text-gold-bright backdrop-blur sm:text-base">
+              <h2 className="rounded-md bg-background/95 px-2 py-0.5 font-display text-sm font-semibold uppercase tracking-[0.14em] text-gold-bright sm:text-base">
                 {groupLabel(s.key, grouping)}
               </h2>
             </div>

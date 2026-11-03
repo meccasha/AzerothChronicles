@@ -2,13 +2,14 @@ import json
 import uuid
 from datetime import UTC, datetime, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
 from pydantic import ValidationError
 from sqlalchemy import func, select
 
 from app.deps import DB, CurrentUser, current_user_or_token
 from app.models import Character, GroupMembership, IngestionRecord, User
 from app.schemas.ingest import IngestEnvelope, IngestResult
+from app.services import game_media
 from app.services.ingestion import ingest_envelope
 from app.services.lua_savedvariables import LuaParseError, parse_savedvariables, savedvariables_to_envelope
 
@@ -26,14 +27,17 @@ def _check_demo(user: User) -> None:
 
 
 @router.post("/envelope", response_model=IngestResult)
-def ingest_json(env: IngestEnvelope, db: DB, user: User = Depends(_user)):
+def ingest_json(env: IngestEnvelope, db: DB, background: BackgroundTasks, user: User = Depends(_user)):
     """Import normalized events (addon JSON export, companion uploads, or simulated events)."""
     _check_demo(user)
-    return ingest_envelope(db, user, env)
+    result = ingest_envelope(db, user, env)
+    background.add_task(game_media.run_in_background)  # fetch icons/artwork for anything new
+    return result
 
 
 @router.post("/savedvariables", response_model=IngestResult)
-async def ingest_savedvariables(request: Request, db: DB, user: User = Depends(_user)):
+async def ingest_savedvariables(request: Request, db: DB, background: BackgroundTasks,
+                                user: User = Depends(_user)):
     """Upload the raw WTF/Account/<ACCOUNT>/SavedVariables/AzerothChronicles.lua file (text body)."""
     _check_demo(user)
     body = await request.body()
@@ -46,7 +50,9 @@ async def ingest_savedvariables(request: Request, db: DB, user: User = Depends(_
         raise HTTPException(422, f"Could not read SavedVariables: {exc}") from exc
     except ValidationError as exc:
         raise HTTPException(422, f"SavedVariables content is not in the expected format: {exc.errors()[:3]}") from exc
-    return ingest_envelope(db, user, env)
+    result = ingest_envelope(db, user, env)
+    background.add_task(game_media.run_in_background)
+    return result
 
 
 @router.get("/records")

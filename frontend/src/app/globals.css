@@ -90,27 +90,31 @@
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-cinzel), ui-serif, Georgia, serif;
   --animate-rise: rise 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) both;
-  --animate-glow: glow 3.2s ease-in-out infinite;
 }
 
 @keyframes rise {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
-@keyframes glow {
-  0%, 100% { box-shadow: 0 0 0 1px rgb(214 169 74 / 0.35), 0 0 24px -6px rgb(214 169 74 / 0.35); }
-  50% { box-shadow: 0 0 0 1px rgb(242 200 106 / 0.6), 0 0 36px -4px rgb(242 200 106 / 0.45); }
-}
 
 @layer base {
   * { @apply border-border outline-ring/50; }
   html { background: var(--background); }
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply text-foreground antialiased;
+  }
+  /* Ambient glow on its own fixed, composited layer. (background-attachment: fixed forced a full-viewport
+     repaint on every scroll frame.) The page colour comes from <html>, so this layer sits above it. */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
     background-image:
       radial-gradient(1200px 600px at 15% -10%, rgb(214 169 74 / 0.07), transparent 60%),
       radial-gradient(900px 500px at 110% 10%, rgb(57 135 229 / 0.06), transparent 60%);
-    background-attachment: fixed;
+    will-change: transform;
   }
   h1, h2, h3 { @apply font-display tracking-wide; }
   ::selection { background: rgb(214 169 74 / 0.35); }
@@ -144,7 +148,16 @@
     background: linear-gradient(180deg, rgb(214 169 74 / 0.0), rgb(214 169 74 / 0.45) 8%, rgb(214 169 74 / 0.25) 92%, rgb(214 169 74 / 0));
   }
   .card-hover {
-    @apply transition duration-200 hover:-translate-y-0.5 hover:border-gold/40 hover:shadow-[0_8px_30px_-12px_rgb(214_169_74/0.35)];
+    @apply transition-[transform,border-color] duration-200 hover:-translate-y-0.5 hover:border-gold/40;
+  }
+  /* Static highlight glow (an infinitely animated box-shadow repainted these cards every frame). */
+  .glow {
+    box-shadow: 0 0 0 1px rgb(214 169 74 / 0.4), 0 0 28px -8px rgb(214 169 74 / 0.45);
+  }
+  /* Let the browser skip layout/paint for list items that are far offscreen. */
+  .cv-auto {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 220px;
   }
 }
 

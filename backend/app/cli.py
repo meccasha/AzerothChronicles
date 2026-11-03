@@ -10,9 +10,9 @@ from app.db import SessionLocal
 from app.integrations.blizzard.adapter import get_adapter
 from app.integrations.blizzard.types import BlizzardError
 from app.models import ExternalAccount, Group, User
-from app.services import blizzard_sync
+from app.services import blizzard_sync, game_media
 from app.services.awards.engine import recompute_group
-from app.services.demo_seed import demo_exists, purge_demo, seed_demo
+from app.services.demo_seed import apply_demo_media, demo_exists, purge_demo, seed_demo
 
 
 def sync_all() -> None:
@@ -26,9 +26,9 @@ def sync_all() -> None:
             except BlizzardError as exc:
                 print(f"[sync] {user.display_name}: failed: {exc}")
         try:
-            print(f"[sync] item metadata enriched: {blizzard_sync.enrich_items(db, adapter)}")
+            print(f"[sync] game artwork: {game_media.resolve_media(db, adapter)}")
         except BlizzardError as exc:
-            print(f"[sync] item enrichment skipped: {exc}")
+            print(f"[sync] game artwork skipped: {exc}")
         for (gid,) in db.execute(select(Group.id)).all():
             recompute_group(db, gid, only_open=True)
 
@@ -41,12 +41,15 @@ def main() -> None:
     sub.add_parser("purge-demo", help="delete all demo data")
     sub.add_parser("recompute-awards", help="recompute awards for every group")
     sub.add_parser("sync", help="run one Battle.net sync pass for all linked users")
+    sub.add_parser("resolve-media", help="fetch missing item/achievement icons, boss portraits and dungeon art")
     sub.add_parser("worker", help="loop: sync + award recompute every SYNC_INTERVAL_MINUTES")
     args = p.parse_args()
 
     if args.cmd == "seed-demo":
         with SessionLocal() as db:
             if args.if_missing and (demo_exists(db) or not get_settings().demo_mode):
+                if demo_exists(db):
+                    apply_demo_media(db)  # keeps older demo installs up to date with artwork
                 print("demo: skipped (exists or DEMO_MODE=false)")
                 return
             t = time.time()
@@ -62,6 +65,12 @@ def main() -> None:
                 print(gid, recompute_group(db, gid))
     elif args.cmd == "sync":
         sync_all()
+    elif args.cmd == "resolve-media":
+        if not game_media.media_enabled():
+            print("game artwork: disabled (set BLIZZARD_CLIENT_ID/BLIZZARD_CLIENT_SECRET, or BLIZZARD_ADAPTER=mock)")
+            return
+        with SessionLocal() as db:
+            print(f"game artwork: {game_media.resolve_media(db, get_adapter())}")
     elif args.cmd == "worker":
         interval = get_settings().sync_interval_minutes * 60
         while True:

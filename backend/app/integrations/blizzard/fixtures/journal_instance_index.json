@@ -1,0 +1,4 @@
+{"_links": {"self": {"href": "..."}}, "instances": [
+  {"key": {"href": "..."}, "name": "Mock: Dawnforge Citadel", "id": 9901},
+  {"key": {"href": "..."}, "name": "Mock: Ember Depths", "id": 9902}
+]}

@@ -180,6 +180,70 @@ def _raid_night(b: _Builder, rng, day: datetime, raid, bosses, difficulty, skill
     return killed
 
 
+# Demo artwork: generic, long-standing game icons chosen to fit each fictional object's theme (never the
+# artwork of a real named boss or dungeon). Served by Blizzard's CDN; the UI falls back to built-in icons if
+# a texture is unavailable.
+DEMO_ICONS = {
+    "items": {
+        9200101: "inv_helmet_03", 9200102: "inv_shoulder_02", 9200103: "inv_misc_cape_02",
+        9200104: "inv_belt_13", 9200105: "inv_weapon_shortblade_05", 9200106: "inv_misc_book_09",
+        9200107: "inv_gauntlets_05", 9200108: "inv_crown_01", 9200109: "inv_jewelry_ring_03",
+        9200110: "inv_shield_06", 9200111: "inv_staff_13", 9200112: "inv_chest_cloth_04",
+        9200001: "inv_sword_39", 9200501: "ability_mount_gryphon_01",
+    },
+    "achievements": {
+        "first_dungeon": "spell_nature_entanglingroots", "keystone_init": "inv_relics_hourglass",
+        "keystone_adept": "inv_relics_hourglass", "keystone_master": "inv_relics_hourglass",
+        "necro_normal": "spell_shadow_raisedead", "necro_heroic": "spell_shadow_raisedead",
+        "aotc": "achievement_dungeon_gloryoftheraider", "glory": "achievement_dungeon_gloryoftheraider",
+        "spire_normal": "spell_nature_cyclone", "explorer": "inv_misc_map_01", "loremaster": "inv_misc_book_09",
+        "pet_tamer": "inv_box_petcarrier_01",
+    },
+    "bosses": {
+        9001: "inv_misc_bone_humanskull_01", 9002: "spell_fire_fireball02", 9003: "spell_shadow_shadowbolt",
+        9004: "ability_warrior_charge", 9005: "ability_dualwield", 9006: "inv_misc_book_09",
+        9007: "spell_nature_thorns", 9008: "spell_fire_incinerate", 9101: "spell_nature_lightning",
+        9102: "inv_gizmo_02", 9103: "spell_holy_holybolt", 9104: "spell_arcane_starfire",
+    },
+    "instances": {
+        "The Gilded Necropolis": "spell_shadow_raisedead", "Spire of the Sundered Sky": "spell_nature_cyclone",
+        "Hollowroot Depths": "spell_nature_entanglingroots", "The Brass Observatory": "inv_misc_spyglass_02",
+        "Sunken Reliquary": "spell_frost_frostbolt02", "Cinderfall Keep": "spell_fire_flamebolt",
+    },
+}
+
+
+def apply_demo_media(db: Session) -> None:
+    """Attach demo artwork (idempotent; also upgrades demo data seeded by older versions)."""
+    from app.models import GameInstance
+    from app.services.game_media import icon_url_from_name
+
+    now = datetime.now(UTC)
+    for item_id, icon in DEMO_ICONS["items"].items():
+        item = db.get(Item, item_id)
+        if item is not None and item.is_demo:
+            item.icon_url, item.metadata_fetched_at = icon_url_from_name(icon), now
+            for loot in db.scalars(select(LootEvent).where(LootEvent.item_id == item_id)):
+                loot.icon_url = item.icon_url
+    for key, icon in DEMO_ICONS["achievements"].items():
+        ach = db.get(Achievement, ACH[key][0])
+        if ach is not None and ach.is_demo:
+            ach.icon_url, ach.icon_fetched_at = icon_url_from_name(icon), now
+    for dungeon_encounter_id, icon in DEMO_ICONS["bosses"].items():
+        enc = db.scalar(select(EncounterModel).where(EncounterModel.dungeon_encounter_id == dungeon_encounter_id))
+        if enc is not None and enc.is_demo:
+            enc.image_url, enc.media_fetched_at, enc.media_status = icon_url_from_name(icon), now, "demo"
+    for name, icon in DEMO_ICONS["instances"].items():
+        inst = db.scalar(select(GameInstance).where(GameInstance.name == name, GameInstance.is_demo.is_(True)))
+        if inst is not None:
+            inst.image_url, inst.media_fetched_at, inst.media_status = icon_url_from_name(icon), now, "demo"
+    # The manually logged demo trinket has no item id; give it a matching icon too.
+    for loot in db.scalars(select(LootEvent).where(LootEvent.is_demo.is_(True), LootEvent.item_id.is_(None),
+                                                   LootEvent.icon_url.is_(None))):
+        loot.icon_url = icon_url_from_name("inv_misc_gem_pearl_04")
+    db.commit()
+
+
 def demo_exists(db: Session) -> bool:
     return db.scalar(select(Group.id).where(Group.name == DEMO_GROUP_NAME)) is not None
 
@@ -190,6 +254,9 @@ def purge_demo(db: Session) -> None:
     db.execute(delete(Achievement).where(Achievement.is_demo.is_(True)))
     db.execute(delete(Item).where(Item.is_demo.is_(True)))
     db.execute(delete(EncounterModel).where(EncounterModel.is_demo.is_(True)))
+    from app.models import GameInstance
+
+    db.execute(delete(GameInstance).where(GameInstance.is_demo.is_(True)))
     db.commit()
 
 
@@ -395,6 +462,7 @@ def seed_demo(db: Session, seed: int = 7) -> Group:
         db.add(AwardVote(id=uuid.uuid4(), group_id=group.id, award_key="group_mvp", period_label="2026-10",
                          nomination_id=noms[choice].id, voter_user_id=users[voter].id, created_at=END))
     db.commit()
+    apply_demo_media(db)
     recompute_group(db, group.id)
     return group
 

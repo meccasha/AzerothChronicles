@@ -54,6 +54,7 @@ def play_session(lua, g, fire):
     fire("NEW_MOUNT_ADDED", 2001)
     t.now = t.now + 3600
     lua.execute('T.instance = { "Fixture Depths", "party", 8, "Mythic Keystone", 5, 0, false, 2600 }')
+    lua.execute("T.uiMap = 2600")
     fire("CHALLENGE_MODE_COMPLETED")
     fire("ENCOUNTER_END", 9999, "Ignored scenario boss", 1, 5, 1)  # no START -> deaths unknown
 
@@ -68,9 +69,14 @@ def test_addon_records_expected_events():
     wipe, kill = records[0], records[1]
     assert wipe.success is False and wipe.deaths == 1 and kill.success is True and kill.deaths == 0
     assert kill.difficulty_name == "Heroic" and kill.start_time is not None
+    assert kill.journal_instance_id == 9901 and kill.journal_encounter_id == 99011  # exact artwork lookups
+    mplus = records[5]
+    assert mplus.instance_id == 2600 and mplus.journal_instance_id == 9902
+    assert records[4].icon_file_id == 132265  # mount icon FileDataID
     roster = [kill.roster[i] for i in range(1, len(kill.roster) + 1)]
     assert [(r.name, r.realm) for r in roster] == [("Groupmate", "Area52")]
-    assert records[2].quality == 4 and records[2].item_level == 639
+    assert records[2].quality == 4 and records[2].item_level == 639 and records[2].icon_file_id == 12345
+    assert records[2].icon is None
     assert records[-1].deaths is None and records[-1].start_time is None
     assert db.lastError is None
     char = db.characters["Player-3676-0ABC1234"]

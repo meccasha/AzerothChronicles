@@ -1,0 +1,5 @@
+{"id": 9901, "name": "Mock: Dawnforge Citadel", "map": {"name": "Mock: Dawnforge Citadel", "id": 2769},
+ "category": {"type": "RAID"}, "expansion": {"name": "Mock Expansion", "id": 1},
+ "encounters": [{"key": {"href": "..."}, "name": "Mock: Ashen Colossus", "id": 99011},
+                {"key": {"href": "..."}, "name": "Mock: The Last Warden", "id": 99012}],
+ "media": {"key": {"href": "..."}, "id": 9901}}

@@ -1,0 +1,3 @@
+{"id": 99011, "name": "Mock: Ashen Colossus", "description": "A fictional boss used by the mock adapter.",
+ "instance": {"key": {"href": "..."}, "name": "Mock: Dawnforge Citadel", "id": 9901},
+ "creatures": [{"id": 1, "name": "Mock: Ashen Colossus", "creature_display": {"key": {"href": "..."}, "id": 880011}}]}

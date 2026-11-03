@@ -22,6 +22,7 @@ from app.models import (
     Encounter,
     EncounterAttempt,
     EncounterAttemptParticipant,
+    GameInstance,
     Group,
     GroupItemRule,
     GroupMembership,
@@ -51,6 +52,7 @@ from app.services.characters import (
     record_identity,
 )
 from app.services.events import add_participant, get_or_create_event, lock_group, recompute_highlights
+from app.services.game_media import icon_url_from_name, name_key
 from app.services.group_settings import GroupSettings, load_settings
 from app.services.sessions import rebuild_activity_sessions
 
@@ -146,16 +148,55 @@ def _record_character(ctx: _Ctx, rec) -> Character:
 # Handlers
 # ---------------------------------------------------------------------------------------------
 
+def get_instance(db: Session, *, name: str | None, map_id: int | None, journal_instance_id: int | None,
+                 instance_type: str | None, is_demo: bool) -> GameInstance | None:
+    """Find or create the dungeon/raid row: journal id > map id > normalized name."""
+    if not name and not journal_instance_id and not map_id:
+        return None
+    inst = None
+    if journal_instance_id:
+        inst = db.scalar(select(GameInstance).where(GameInstance.journal_instance_id == journal_instance_id))
+    if inst is None and map_id:
+        inst = db.scalar(select(GameInstance).where(GameInstance.map_id == map_id).limit(1))
+    if inst is None and name:
+        inst = db.scalar(select(GameInstance).where(func.lower(GameInstance.name) == name.lower()).limit(1))
+        if inst is None:  # tolerant match ("The Stonevault" vs "Stonevault"); only a few hundred rows exist
+            key = name_key(name)
+            inst = next((c for c in db.scalars(select(GameInstance)) if name_key(c.name) == key), None)
+    if inst is None:
+        inst = GameInstance(name=name or f"Instance {map_id or journal_instance_id}", map_id=map_id,
+                            journal_instance_id=journal_instance_id, instance_type=instance_type, is_demo=is_demo)
+        db.add(inst)
+        db.flush()
+        return inst
+    if journal_instance_id and inst.journal_instance_id is None and not db.scalar(
+            select(GameInstance.id).where(GameInstance.journal_instance_id == journal_instance_id)):
+        inst.journal_instance_id = journal_instance_id
+        inst.media_fetched_at = None  # exact id now known: (re)fetch artwork
+    inst.map_id = inst.map_id or map_id
+    inst.instance_type = inst.instance_type or instance_type
+    return inst
+
+
 def _get_encounter(db: Session, rec: EncounterRecord, is_demo: bool) -> Encounter:
+    itype = "raid" if rec.instance_type == "raid" else "dungeon"
     enc = db.scalar(select(Encounter).where(Encounter.dungeon_encounter_id == rec.encounter_id))
     if enc is None:
         enc = Encounter(
             dungeon_encounter_id=rec.encounter_id, name=rec.encounter_name, instance_name=rec.instance_name,
-            instance_id=rec.instance_id, instance_type="raid" if rec.instance_type == "raid" else "dungeon",
-            is_demo=is_demo,
+            instance_id=rec.instance_id, instance_type=itype, is_demo=is_demo,
         )
         db.add(enc)
         db.flush()
+    if enc.game_instance_id is None or rec.journal_instance_id:
+        inst = get_instance(db, name=rec.instance_name, map_id=rec.instance_id,
+                            journal_instance_id=rec.journal_instance_id, instance_type=itype, is_demo=is_demo)
+        if inst is not None:
+            enc.game_instance_id = inst.id
+    if rec.journal_encounter_id and enc.journal_encounter_id is None and not db.scalar(
+            select(Encounter.id).where(Encounter.journal_encounter_id == rec.journal_encounter_id)):
+        enc.journal_encounter_id = rec.journal_encounter_id
+        enc.media_fetched_at = None
     return enc
 
 
@@ -231,6 +272,7 @@ def handle_encounter(ctx: _Ctx, rec: EncounterRecord, ch: Character) -> dict:
             occurred_at=ended, time_precision="exact",
             importance=importance.boss_kill_importance(enc.instance_type, difficulty, False, len(parts)),
             encounter_id=enc.id, difficulty=difficulty, instance_name=enc.instance_name,
+            game_instance_id=enc.game_instance_id,
             source=ctx.source, provenance="live", confidence="confirmed", is_demo=ctx.is_demo,
             extra={"group_size": rec.group_size,
                    "duration_s": (rec.end_time - rec.start_time) if rec.start_time else None},
@@ -325,7 +367,7 @@ def _notable_reason(settings: GroupSettings, rule: str | None, quality: str, cat
 
 def _record_loot(ctx: _Ctx, ch: Character, *, item_id: int | None, name: str, quality: str, category: str,
                  icon: str | None, when: datetime, dedup: str, instance: str | None, difficulty: str | None,
-                 encounter_db_id: int | None, item_level: int | None) -> dict:
+                 encounter_db_id: int | None, item_level: int | None, collectible_id: int | None = None) -> dict:
     db = ctx.db
     refs: dict = {"loot_events": [], "events": []}
     any_notable = False
@@ -353,7 +395,7 @@ def _record_loot(ctx: _Ctx, ch: Character, *, item_id: int | None, name: str, qu
                 item_id=item_id, difficulty=difficulty, instance_name=instance, encounter_id=encounter_db_id,
                 source=ctx.source, provenance="live", confidence="confirmed", is_demo=ctx.is_demo,
                 extra={"quality": quality, "category": category, "notable_reason": reason,
-                       "item_level": item_level, "icon": icon},
+                       "item_level": item_level},
             )
             add_participant(db, event, ctx.user.id, ch.id, "confirmed")
             refs["events"].append(str(event.id))
@@ -361,7 +403,7 @@ def _record_loot(ctx: _Ctx, ch: Character, *, item_id: int | None, name: str, qu
             id=uuid.uuid4(), group_id=group.id, item_id=item_id, item_name=name, quality=quality,
             category=category, icon_url=icon, user_id=ctx.user.id, character_id=ch.id, obtained_at=when,
             source_instance=instance, source_encounter_id=encounter_db_id, difficulty=difficulty,
-            notable_reason=reason, source=ctx.source, dedup_key=dedup,
+            notable_reason=reason, source=ctx.source, dedup_key=dedup, collectible_id=collectible_id,
             event_id=event.id if event else None, is_demo=ctx.is_demo,
         )
         db.add(loot)
@@ -373,25 +415,38 @@ def _record_loot(ctx: _Ctx, ch: Character, *, item_id: int | None, name: str, qu
     return refs
 
 
-def _upsert_item(db: Session, item_id: int, name: str, quality: str, item_class, item_subclass, icon,
-                 is_demo: bool) -> None:
+def _icon_fields(icon_file_id: int | None, legacy: str | None) -> tuple[int | None, str | None]:
+    """Addon icons are FileDataIDs (numbers); only texture *names* can be turned into CDN URLs."""
+    if legacy and legacy.strip().isdigit():
+        return icon_file_id or int(legacy.strip()), None
+    return icon_file_id, icon_url_from_name(legacy)
+
+
+def _upsert_item(db: Session, item_id: int, name: str, quality: str, item_class, item_subclass,
+                 icon_file_id: int | None, icon_url: str | None, is_demo: bool) -> Item:
     item = db.get(Item, item_id)
     if item is None:
-        db.add(Item(id=item_id, name=name, quality=quality, item_class=item_class, item_subclass=item_subclass,
-                    icon_url=icon, metadata_source="addon", is_demo=is_demo))
+        item = Item(id=item_id, name=name, quality=quality, item_class=item_class, item_subclass=item_subclass,
+                    icon_file_id=icon_file_id, icon_url=icon_url, metadata_source="addon", is_demo=is_demo)
+        db.add(item)
         db.flush()
+    else:
+        item.icon_file_id = item.icon_file_id or icon_file_id
+        item.icon_url = item.icon_url or icon_url
+    return item
 
 
 def handle_loot(ctx: _Ctx, rec: LootRecord, ch: Character) -> dict:
     quality = QUALITY_NAMES.get(rec.quality, "unknown")
     category = _loot_category(rec.item_class, rec.item_subclass)
-    _upsert_item(ctx.db, rec.item_id, rec.item_name, quality, rec.item_class, rec.item_subclass, rec.icon,
-                 ctx.is_demo)
+    file_id, icon_url = _icon_fields(rec.icon_file_id, rec.icon)
+    item = _upsert_item(ctx.db, rec.item_id, rec.item_name, quality, rec.item_class, rec.item_subclass, file_id,
+                        icon_url, ctx.is_demo)
     enc_id = None
     if rec.encounter_id:
         enc_id = ctx.db.scalar(select(Encounter.id).where(Encounter.dungeon_encounter_id == rec.encounter_id))
     return _record_loot(
-        ctx, ch, item_id=rec.item_id, name=rec.item_name, quality=quality, category=category, icon=rec.icon,
+        ctx, ch, item_id=rec.item_id, name=rec.item_name, quality=quality, category=category, icon=item.icon_url,
         when=ts(rec.looted_at), dedup=f"loot:{ch.id}:{rec.item_id}:{rec.looted_at // 60}",
         instance=rec.instance_name, difficulty=rec.difficulty_name, encounter_db_id=enc_id,
         item_level=rec.item_level,
@@ -400,15 +455,15 @@ def handle_loot(ctx: _Ctx, rec: LootRecord, ch: Character) -> dict:
 
 def handle_collectible(ctx: _Ctx, rec: CollectibleRecord, ch: Character) -> dict:
     quality = "unknown"
-    if rec.item_id:
-        item = ctx.db.get(Item, rec.item_id)
-        if item:
-            quality = item.quality
+    item = ctx.db.get(Item, rec.item_id) if rec.item_id else None
+    if item:
+        quality = item.quality
     return _record_loot(
-        ctx, ch, item_id=rec.item_id if rec.item_id and ctx.db.get(Item, rec.item_id) else None,
-        name=rec.name, quality=quality, category=rec.type, icon=None, when=ts(rec.learned_at),
+        ctx, ch, item_id=item.id if item else None,
+        name=rec.name, quality=quality, category=rec.type, icon=item.icon_url if item else None,
+        when=ts(rec.learned_at),
         dedup=f"{rec.type}:{ctx.user.id}:{rec.collectible_id}", instance=None, difficulty=None,
-        encounter_db_id=None, item_level=None,
+        encounter_db_id=None, item_level=None, collectible_id=rec.collectible_id,
     )
 
 
@@ -417,6 +472,8 @@ def handle_dungeon(ctx: _Ctx, rec: DungeonRecord, ch: Character) -> dict:
     when = ts(rec.completed_at)
     refs: dict = {"events": []}
     title = f"{rec.name} +{rec.keystone_level}" if rec.keystone_level else rec.name
+    inst = get_instance(db, name=rec.name, map_id=rec.instance_id, journal_instance_id=rec.journal_instance_id,
+                        instance_type="dungeon", is_demo=ctx.is_demo)
     for group, _m, settings in ctx.groups:
         if "dungeon_complete" not in settings.events.enabled_categories:
             continue
@@ -437,10 +494,13 @@ def handle_dungeon(ctx: _Ctx, rec: DungeonRecord, ch: Character) -> dict:
                 occurred_at=when, time_precision="exact",
                 importance=importance.dungeon_importance(rec.keystone_level, 1 + len(rec.roster)),
                 instance_name=rec.name, difficulty=f"Mythic+ {rec.keystone_level}" if rec.keystone_level else None,
+                game_instance_id=inst.id if inst else None,
                 source=ctx.source, provenance="live", confidence="confirmed", is_demo=ctx.is_demo,
                 extra={"map_id": rec.map_id, "keystone_level": rec.keystone_level, "on_time": rec.on_time,
                        "duration_ms": rec.duration_ms},
             )
+        if event.game_instance_id is None and inst is not None:
+            event.game_instance_id = inst.id
         add_participant(db, event, ctx.user.id, ch.id, "confirmed")
         for entry in rec.roster:
             match = find_group_character(db, group.id, entry.name, entry.realm, ch.realm_name)

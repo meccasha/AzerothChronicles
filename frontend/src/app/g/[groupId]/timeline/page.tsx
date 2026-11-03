@@ -83,7 +83,7 @@ function TimelineInner() {
         actions={<ManualEventDialog groupId={groupId} />}
       />
 
-      <div className="sticky top-[52px] z-30 -mx-4 mb-6 flex flex-col gap-3 border-y bg-background/90 px-4 py-3 backdrop-blur sm:mx-0 sm:rounded-xl sm:border lg:top-0">
+      <div className="sticky top-[52px] z-30 -mx-4 mb-6 flex flex-col gap-3 border-y bg-background/95 px-4 py-3 sm:mx-0 sm:rounded-xl sm:border lg:top-0">
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative min-w-0 flex-1 sm:max-w-xs">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />

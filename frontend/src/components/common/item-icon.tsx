@@ -1,9 +1,11 @@
 import { Bird, Box, Crown, Gem, PawPrint, Shield, Sword, ToyBrick } from "lucide-react";
+import { GameImage } from "@/components/common/game-image";
 import { cn } from "@/lib/utils";
 import { qualityColor } from "@/lib/wow";
 
 const CATEGORY_ICON = { gear: Sword, mount: Bird, pet: PawPrint, toy: ToyBrick, collectible: Gem, other: Box } as const;
 
+/** Item icon framed in its quality colour; the real in-game icon when known, a generic glyph otherwise. */
 export function ItemIcon({ quality, category, iconUrl, size = 44, className, itemClass }: { quality: string; category?: string | null; iconUrl?: string | null; size?: number; className?: string; itemClass?: string | null }) {
   const color = qualityColor(quality);
   const Icon =
@@ -16,15 +18,14 @@ export function ItemIcon({ quality, category, iconUrl, size = 44, className, ite
           : Sword;
   return (
     <span
-      className={cn("relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-md", quality === "legendary" && "animate-glow", className)}
+      className={cn("relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-md", quality === "legendary" && "glow", className)}
       style={{ width: size, height: size, boxShadow: `inset 0 0 0 2px ${color}, 0 0 14px -4px ${color}`, background: `radial-gradient(circle at 50% 35%, color-mix(in srgb, ${color} 28%, transparent), #07090e 75%)` }}
     >
-      {iconUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={iconUrl} alt="" className="size-full object-cover" />
-      ) : (
-        <Icon aria-hidden style={{ color, width: size * 0.5, height: size * 0.5 }} />
-      )}
+      <GameImage
+        src={iconUrl}
+        className="size-full rounded-[inherit] object-cover p-[2px]"
+        fallback={<Icon aria-hidden style={{ color, width: size * 0.5, height: size * 0.5 }} />}
+      />
     </span>
   );
 }

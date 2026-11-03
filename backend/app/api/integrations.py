@@ -14,7 +14,7 @@ from app.integrations.blizzard.adapter import get_adapter
 from app.integrations.blizzard.types import BlizzardError
 from app.models import ApiToken, Character, ExternalAccount, IngestionRecord, OAuthState, SyncJob, SyncSource, User
 from app.security import hash_token, new_token
-from app.services import blizzard_sync
+from app.services import blizzard_sync, game_media
 
 router = APIRouter(prefix="/integrations", tags=["integrations"])
 
@@ -66,6 +66,45 @@ def integration_status(user: CurrentUser, db: DB):
         "recent_errors": [{"id": str(r.id), "record_type": r.record_type, "detail": r.status_detail,
                            "received_at": r.received_at} for r in rejected],
     }
+
+
+_last_media_refresh: list[datetime] = []
+
+
+@router.get("/media")
+def media_status(user: CurrentUser, db: DB):
+    """Game artwork (icons, boss portraits, dungeon art) coverage and whether it can be fetched."""
+    from sqlalchemy import func
+
+    from app.models import Achievement, Encounter, GameInstance, Item
+
+    def cov(model, col):
+        total = db.scalar(select(func.count()).select_from(model).where(model.is_demo.is_(False))) or 0
+        have = db.scalar(select(func.count()).select_from(model).where(model.is_demo.is_(False), col.is_not(None))) or 0
+        return {"total": total, "with_art": have}
+
+    s = get_settings()
+    return {
+        "enabled": game_media.media_enabled(),
+        "mode": s.blizzard_adapter,
+        "pending": game_media.pending_counts(db),
+        "coverage": {
+            "items": cov(Item, Item.icon_url), "achievements": cov(Achievement, Achievement.icon_url),
+            "bosses": cov(Encounter, Encounter.image_url), "instances": cov(GameInstance, GameInstance.image_url),
+        },
+    }
+
+
+@router.post("/media/refresh")
+def refresh_media(user: CurrentUser, background: BackgroundTasks):
+    if not game_media.media_enabled():
+        raise HTTPException(503, "Game artwork needs Battle.net API credentials (BLIZZARD_CLIENT_ID/SECRET).")
+    now = datetime.now(UTC)
+    if _last_media_refresh and now - _last_media_refresh[-1] < timedelta(seconds=60):
+        raise HTTPException(429, "Artwork refresh already requested in the last minute")
+    _last_media_refresh[:] = [now]
+    background.add_task(game_media.run_in_background)
+    return {"status": "started"}
 
 
 @router.get("/blizzard/authorize")
@@ -153,6 +192,7 @@ def _run_sync(user_id: uuid.UUID) -> None:
                 blizzard_sync.run_user_sync(db, user, get_adapter())
             except BlizzardError:
                 pass  # recorded on the job/source rows
+    game_media.run_in_background()
 
 
 @router.post("/blizzard/sync")

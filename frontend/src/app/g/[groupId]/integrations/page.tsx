@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, CheckCircle2, CircleDashed, Download, KeyRound, Plug, RefreshCw, Upload, Wand2 } from "lucide-react";
+import { AlertTriangle, CheckCircle2, CircleDashed, Download, ImageIcon, KeyRound, Plug, RefreshCw, Upload, Wand2 } from "lucide-react";
 import { useParams, useSearchParams } from "next/navigation";
 import * as React from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -155,6 +155,7 @@ function IntegrationsInner() {
         </Card>
       </div>
 
+      <GameArtCard />
       <ImportCard groupId={groupId} disabled={!!me.data?.is_demo} onDone={refresh} />
       <TokensCard disabled={!!me.data?.is_demo} />
 
@@ -202,6 +203,73 @@ function IntegrationsInner() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function GameArtCard() {
+  const toast = useToast();
+  const media = useQuery({
+    queryKey: ["media-status"],
+    queryFn: () =>
+      api<{
+        enabled: boolean;
+        mode: string;
+        pending: Record<string, number>;
+        coverage: Record<"items" | "achievements" | "bosses" | "instances", { total: number; with_art: number }>;
+      }>("/integrations/media"),
+  });
+  if (!media.data) return null;
+  const m = media.data;
+  const pending = Object.values(m.pending).reduce((a, b) => a + b, 0);
+  const labels = { items: "Item icons", achievements: "Achievement icons", bosses: "Boss portraits", instances: "Dungeon & raid art" } as const;
+  const refresh = async () => {
+    try {
+      await api("/integrations/media/refresh", { method: "POST" });
+      toast("Fetching game artwork in the background");
+      setTimeout(() => media.refetch(), 4000);
+    } catch (e) {
+      toast((e as Error).message, "error");
+    }
+  };
+  return (
+    <Card>
+      <CardHeader className="flex-row items-start justify-between gap-3">
+        <div>
+          <CardTitle className="flex items-center gap-2">
+            <ImageIcon className="size-4 text-gold" /> Game artwork
+          </CardTitle>
+          <CardDescription>Real item &amp; achievement icons, boss portraits and dungeon art from Blizzard&apos;s Game Data API.</CardDescription>
+        </div>
+        {m.enabled ? <Badge variant="success"><CheckCircle2 /> {m.mode === "mock" ? "Mock data" : "Enabled"}</Badge> : <Badge variant="secondary"><CircleDashed /> Not configured</Badge>}
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3 text-sm">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {(Object.keys(labels) as (keyof typeof labels)[]).map((k) => (
+            <div key={k} className="rounded-lg border bg-background-2/60 px-3 py-2">
+              <p className="text-xs text-muted-foreground">{labels[k]}</p>
+              <p className="font-display text-lg tabular-nums">
+                {m.coverage[k].with_art}
+                <span className="text-sm text-muted-foreground">/{m.coverage[k].total}</span>
+              </p>
+            </div>
+          ))}
+        </div>
+        {m.enabled ? (
+          <div className="flex flex-wrap items-center gap-3">
+            <Button variant="outline" size="sm" onClick={refresh}>
+              <RefreshCw /> Fetch missing artwork
+            </Button>
+            <span className="text-xs text-muted-foreground">{pending ? `${pending} object(s) waiting` : "Up to date"} · runs automatically after every upload</span>
+          </div>
+        ) : (
+          <Notice>
+            Icons need a free Battle.net API client: set <code>BLIZZARD_CLIENT_ID</code> and <code>BLIZZARD_CLIENT_SECRET</code> (no account linking required) and
+            <code> BLIZZARD_ADAPTER=live</code>. Until then the site shows built-in icons.
+          </Notice>
+        )}
+        {m.mode === "mock" ? <p className="text-xs text-muted-foreground">Mock mode only knows a few fictional fixture items, so your own uploads keep generic icons until you switch to live.</p> : null}
+      </CardContent>
+    </Card>
   );
 }
 

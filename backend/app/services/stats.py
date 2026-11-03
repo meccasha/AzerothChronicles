@@ -213,19 +213,23 @@ def member_table(db: Session, group_id: uuid.UUID, rng: Range) -> list[dict]:
 
 
 def progression(db: Session, group_id: uuid.UUID) -> list[dict]:
+    from app.models import GameInstance
+
     rows = db.execute(
         select(Encounter.id, Encounter.name, Encounter.instance_name, Encounter.instance_type,
                EncounterAttempt.difficulty,
                func.count(case((EncounterAttempt.success, 1))), func.count(case((~EncounterAttempt.success, 1))),
                func.min(case((EncounterAttempt.success, EncounterAttempt.ended_at))),
-               func.min(EncounterAttempt.ended_at))
+               func.min(EncounterAttempt.ended_at), Encounter.image_url, GameInstance.image_url)
         .join(EncounterAttempt, EncounterAttempt.encounter_id == Encounter.id)
+        .outerjoin(GameInstance, GameInstance.id == Encounter.game_instance_id)
         .where(EncounterAttempt.group_id == group_id)
-        .group_by(Encounter.id, EncounterAttempt.difficulty)
+        .group_by(Encounter.id, EncounterAttempt.difficulty, GameInstance.image_url)
         .order_by(Encounter.instance_name, func.min(EncounterAttempt.ended_at))
     ).all()
     return [{"encounter_id": r[0], "name": r[1], "instance_name": r[2], "instance_type": r[3], "difficulty": r[4],
-             "kills": r[5], "wipes": r[6], "first_kill_at": r[7], "first_attempt_at": r[8]} for r in rows]
+             "kills": r[5], "wipes": r[6], "first_kill_at": r[7], "first_attempt_at": r[8],
+             "image_url": r[9] or r[10]} for r in rows]
 
 
 def coverage(db: Session, group_id: uuid.UUID) -> dict[str, Any]:

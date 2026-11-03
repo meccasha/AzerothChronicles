@@ -24,7 +24,7 @@
 
 ## Test coverage
 
-* Backend (61): auth, CSRF, privacy/isolation, invites & roles, account deletion/export, ingestion
+* Backend (69): auth, CSRF, privacy/isolation, invites & roles, account deletion/export, ingestion
   (cross-reporter dedup, roster attribution, idempotency, out-of-order firsts, wipe streaks, GUID hijack,
   validation, scenarios), loot rules, achievements merge/min points, dungeon merge, renames, partial data,
   Battle.net OAuth/state, backfill vs live, observed timestamps, failures/retries/404/expired tokens,
@@ -33,6 +33,16 @@
 * Frontend: TypeScript, Vitest (grouping, query strings, event-card provenance labels), Playwright
   (register → create group → import → dedup on re-import → timeline/manual event/stats/Hall of Fame/Loot
   Museum; demo browse + unauthenticated access check on desktop and mobile).
+
+## Recent changes
+
+* **Game artwork**: real item and achievement icons, boss portraits, dungeon/raid artwork and mount renders
+  from Blizzard's Game Data API (migration `0002`, addon 1.1.0 sends Encounter Journal ids). Not verified
+  against live Battle.net from the build environment (its hosts were blocked); fixture-tested.
+* **Scrolling performance**: removed per-frame repaints (fixed-attachment background, backdrop blur on sticky
+  bars, infinitely animated glows) and skip rendering of offscreen cards (`content-visibility`). Measured in
+  headless Chromium over a 4 s scroll: raster work on the timeline fell from ~4.1 s to ~0.1 s, and janky frames
+  from 14 to 0.
 
 ## Known limitations & risks
 

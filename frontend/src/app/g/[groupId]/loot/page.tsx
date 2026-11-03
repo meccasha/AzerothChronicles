@@ -169,7 +169,7 @@ function LootCard({ row, groupId }: { row: LootRow; groupId: string }) {
       </div>
     </>
   );
-  const cls = cn("flex gap-3 rounded-xl border bg-card/90 p-3.5 parchment card-hover", row.quality === "legendary" && "border-[#ff8000]/40");
+  const cls = cn("flex gap-3 rounded-xl border bg-card/90 p-3.5 parchment card-hover cv-auto", row.quality === "legendary" && "border-[#ff8000]/40");
   return row.event_id ? (
     <Link href={`/g/${groupId}/timeline/${row.event_id}`} className={cls} data-testid="loot-card">
       {body}

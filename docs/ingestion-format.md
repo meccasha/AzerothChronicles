@@ -30,11 +30,11 @@ from `GetServerTime()`.
 
 | type | fields |
 |---|---|
-| `encounter` | `encounter_id` (DungeonEncounterID), `encounter_name`, `instance_name`, `instance_id`, `instance_type` (`raid`/`party`; others ignored), `difficulty_id`, `difficulty_name`, `group_size`, `success`, `start_time` (only if the pull start was seen), `end_time`, `roster` `[{name, realm}]`, `deaths` (own deaths; `null` = unknown) |
+| `encounter` | `encounter_id` (DungeonEncounterID), `encounter_name`, `instance_name`, `instance_id`, `instance_type` (`raid`/`party`; others ignored), `difficulty_id`, `difficulty_name`, `group_size`, `success`, `start_time` (only if the pull start was seen), `end_time`, `roster` `[{name, realm}]`, `deaths` (own deaths; `null` = unknown), `journal_instance_id`, `journal_encounter_id` (optional, for artwork) |
 | `achievement` | `achievement_id`, `name`, `points`, `description`, `feat_of_strength`, `earned_at` |
-| `loot` | `item_id`, `item_name`, `quality` (0–8), `item_class`, `item_subclass`, `item_level`, `icon`, `encounter_id`, `instance_name`, `difficulty_name`, `looted_at` |
-| `mount` / `pet` / `toy` | `collectible_id`, `name`, `item_id`, `learned_at` |
-| `dungeon_complete` | `map_id`, `name`, `keystone_level`, `on_time`, `completed_at`, `duration_ms`, `roster` |
+| `loot` | `item_id`, `item_name`, `quality` (0–8), `item_class`, `item_subclass`, `item_level`, `icon_file_id` (client FileDataID), `encounter_id`, `instance_name`, `difficulty_name`, `looted_at`. Legacy `icon`: a FileDataID string or an icon texture name (`inv_sword_39`); URLs are ignored. |
+| `mount` / `pet` / `toy` | `collectible_id`, `name`, `item_id`, `icon_file_id`, `learned_at` |
+| `dungeon_complete` | `map_id` (challenge-mode map id), `name`, `instance_id` (instance map id), `journal_instance_id`, `keystone_level`, `on_time`, `completed_at`, `duration_ms`, `roster` |
 
 ## Processing rules
 

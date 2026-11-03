@@ -30,6 +30,32 @@ local function instanceInfo()
     ns.clean(instanceID)
 end
 
+--- Encounter Journal ids for the current instance (and boss), so the website can show the exact
+--- dungeon artwork and boss portrait from Blizzard's Game Data API. Returns nils when unavailable.
+local function journalIds(dungeonEncounterID)
+  local jInstance, jEncounter
+  local ok = pcall(function()
+    if C_Map and C_Map.GetBestMapForUnit and EJ_GetInstanceForMap then
+      local uiMap = C_Map.GetBestMapForUnit("player")
+      if uiMap then jInstance = ns.clean(EJ_GetInstanceForMap(uiMap)) end
+    end
+    if jInstance == 0 then jInstance = nil end
+    if jInstance and dungeonEncounterID and EJ_GetEncounterInfoByIndex then
+      for i = 1, 40 do
+        local name, _, jEncID, _, _, _, dungeonEncID = EJ_GetEncounterInfoByIndex(i, jInstance)
+        if not name then break end
+        if ns.clean(dungeonEncID) == dungeonEncounterID then
+          jEncounter = ns.clean(jEncID)
+          break
+        end
+      end
+    end
+  end)
+  if not ok then return nil, nil end
+  return jInstance, jEncounter
+end
+ns.journalIds = journalIds
+
 -------------------------------------------------------------------------------------------------
 -- Lifecycle
 -------------------------------------------------------------------------------------------------
@@ -83,6 +109,7 @@ register("ENCOUNTER_END", function(encounterID, encounterName, difficultyID, gro
 
   local endTime = ns.now()
   local matching = current and current.id == encounterID
+  local jInstance, jEncounter = journalIds(encounterID)
   difficultyID = ns.clean(difficultyID)
   if GetDifficultyInfo and difficultyID then
     diffName = GetDifficultyInfo(difficultyID) or diffName
@@ -95,6 +122,8 @@ register("ENCOUNTER_END", function(encounterID, encounterName, difficultyID, gro
     instance_name = instName,
     instance_id = instID,
     instance_type = instType,
+    journal_instance_id = jInstance,
+    journal_encounter_id = jEncounter,
     difficulty_id = difficultyID,
     difficulty_name = diffName,
     group_size = ns.clean(groupSize),
@@ -129,10 +158,14 @@ register("CHALLENGE_MODE_COMPLETED", function()
   if not mapID then return end
   local name = C_ChallengeMode.GetMapUIInfo and C_ChallengeMode.GetMapUIInfo(mapID) or ("Dungeon " .. mapID)
   local now = ns.now()
+  local _, _, _, _, _, instID = instanceInfo()
+  local jInstance = journalIds(nil)
   ns.addRecord({
     id = string.format("mplus-%s-%d-%d", ns.shortGUID(), mapID, now),
     type = "dungeon_complete",
     map_id = mapID,
+    instance_id = instID,
+    journal_instance_id = jInstance,
     name = name,
     keystone_level = level,
     on_time = ns.clean(onTime),
@@ -190,7 +223,8 @@ local function recordItem(itemLink, encounterID)
     if ns.addRecord({
       id = id, type = "loot", item_id = itemID, item_name = name, quality = quality,
       item_class = itemType, item_subclass = itemSubType, item_level = ilvl,
-      icon = icon and tostring(icon) or nil,
+      -- The client only exposes icon FileDataIDs; the website resolves the image via Battle.net.
+      icon_file_id = tonumber(icon),
       encounter_id = encounterID, instance_name = instName, difficulty_name = diffName, looted_at = now,
     }) then
       ns.print("Recorded loot: " .. itemLink)
@@ -242,10 +276,11 @@ end)
 register("NEW_MOUNT_ADDED", function(mountID)
   mountID = ns.clean(mountID)
   if not mountID or not ns.setting("recordCollectibles") or not C_MountJournal then return end
-  local name = C_MountJournal.GetMountInfoByID(mountID)
+  local name, _, icon = C_MountJournal.GetMountInfoByID(mountID)
   ns.addRecord({
     id = string.format("mount-%s-%d", ns.shortGUID(), mountID),
-    type = "mount", collectible_id = mountID, name = name or ("Mount " .. mountID), learned_at = ns.now(),
+    type = "mount", collectible_id = mountID, name = name or ("Mount " .. mountID),
+    icon_file_id = tonumber(ns.clean(icon)), learned_at = ns.now(),
   })
   ns.print("Recorded new mount: " .. tostring(name))
 end)

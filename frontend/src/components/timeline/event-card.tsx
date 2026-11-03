@@ -4,13 +4,13 @@ import { MessageSquare, Pin, Sparkles, Star } from "lucide-react";
 import Link from "next/link";
 import { AvatarStack } from "@/components/common/avatar";
 import { ProvenanceBadges } from "@/components/common/badges";
-import { ItemIcon } from "@/components/common/item-icon";
 import { Badge } from "@/components/ui/badge";
 import { fmtDateTime, fmtTime } from "@/lib/format";
 import type { AdventureEvent } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { EVENT_TYPE_LABEL, HIGHLIGHT_LABEL, MAJOR_HIGHLIGHTS, qualityColor } from "@/lib/wow";
-import { EVENT_ACCENT, EVENT_ICON } from "./event-meta";
+import { EventArt, SceneBackdrop } from "./event-art";
+import { EVENT_ACCENT } from "./event-meta";
 import { Reactions } from "./reactions";
 
 export function eventSubtitle(e: AdventureEvent): string {
@@ -35,7 +35,6 @@ export function eventSubtitle(e: AdventureEvent): string {
 }
 
 export function EventCard({ event, groupId, compact }: { event: AdventureEvent; groupId: string; compact?: boolean }) {
-  const Icon = EVENT_ICON[event.event_type];
   const accent = event.event_type === "loot" && event.extra.quality ? qualityColor(event.extra.quality) : EVENT_ACCENT[event.event_type];
   const special = !!event.highlight && MAJOR_HIGHLIGHTS.has(event.highlight);
   const href = `/g/${groupId}/timeline/${event.id}`;
@@ -44,8 +43,8 @@ export function EventCard({ event, groupId, compact }: { event: AdventureEvent; 
   return (
     <article
       className={cn(
-        "group relative overflow-hidden rounded-xl border bg-card/90 parchment card-hover",
-        special && "border-gold/50 bg-gradient-to-br from-[#2a2213]/90 via-card/95 to-card/95 animate-glow",
+        "group relative overflow-hidden rounded-xl border bg-card/90 parchment card-hover cv-auto",
+        special && "border-gold/50 bg-gradient-to-br from-[#2a2213]/90 via-card/95 to-card/95 glow",
         event.hidden && "opacity-60",
       )}
       data-testid="event-card"
@@ -56,17 +55,9 @@ export function EventCard({ event, groupId, compact }: { event: AdventureEvent; 
           {event.extra.milestone ?? HIGHLIGHT_LABEL[event.highlight!] ?? "Highlight"}
         </div>
       ) : null}
-      <div className={cn("flex gap-3.5 p-4", compact && "p-3")}>
-        {event.event_type === "loot" ? (
-          <ItemIcon quality={String(event.extra.quality ?? event.item?.quality ?? "epic")} category={event.extra.category as string} iconUrl={event.item?.icon_url} size={compact ? 38 : 46} />
-        ) : (
-          <span
-            className="flex shrink-0 items-center justify-center rounded-lg"
-            style={{ width: compact ? 38 : 46, height: compact ? 38 : 46, color: accent, background: `color-mix(in srgb, ${accent} 14%, transparent)`, boxShadow: `inset 0 0 0 1px color-mix(in srgb, ${accent} 45%, transparent)` }}
-          >
-            <Icon className={compact ? "size-[18px]" : "size-5"} aria-hidden />
-          </span>
-        )}
+      {!compact ? <SceneBackdrop url={event.scene_url} /> : null}
+      <div className={cn("relative flex gap-3.5 p-4", compact && "p-3")}>
+        <EventArt event={event} size={compact ? 38 : 52} />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] uppercase tracking-wider text-muted-foreground">
             <span style={{ color: accent }} className="font-semibold">

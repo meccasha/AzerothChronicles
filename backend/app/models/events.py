@@ -61,6 +61,7 @@ class AdventureEvent(TimestampMixin, Base):
     item_id: Mapped[int | None] = mapped_column(ForeignKey("items.id", ondelete="SET NULL"))
     difficulty: Mapped[str | None] = mapped_column(String(32))
     instance_name: Mapped[str | None] = mapped_column(String(160))
+    game_instance_id: Mapped[int | None] = mapped_column(ForeignKey("game_instances.id", ondelete="SET NULL"))
     expansion: Mapped[str | None] = mapped_column(String(64))
     season: Mapped[str | None] = mapped_column(String(64))
 
@@ -88,6 +89,7 @@ class AdventureEvent(TimestampMixin, Base):
     achievement = relationship("Achievement")
     encounter = relationship("Encounter")
     item = relationship("Item")
+    game_instance = relationship("GameInstance")
 
 
 class EventParticipant(Base):
@@ -265,6 +267,7 @@ class LootEvent(TimestampMixin, Base):
     quality: Mapped[str] = mapped_column(String(16))
     category: Mapped[str] = mapped_column(String(24))  # gear | mount | pet | toy | collectible | other
     icon_url: Mapped[str | None] = mapped_column(String(512))
+    collectible_id: Mapped[int | None] = mapped_column(Integer)  # mount / toy id for collectibles
     user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"))
     character_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("characters.id", ondelete="SET NULL")

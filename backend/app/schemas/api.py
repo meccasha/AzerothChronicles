@@ -244,6 +244,10 @@ class EventOut(BaseModel):
     encounter: dict | None
     item: dict | None
     extra: dict[str, Any]
+    # Game artwork (Blizzard render CDN). image_kind: icon | portrait | scene. scene_url: instance artwork.
+    image_url: str | None = None
+    image_kind: str | None = None
+    scene_url: str | None = None
     participants: list[ParticipantOut]
     reactions: list[ReactionSummary]
     comment_count: int

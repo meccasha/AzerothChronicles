@@ -26,6 +26,7 @@ Uploads are idempotent, so exporting or uploading the same data repeatedly is sa
 | Own deaths during a pull | `PLAYER_DEAD` between START/END | only if the pull start was observed; otherwise `null` (unknown) |
 | Mythic+ completions | `CHALLENGE_MODE_COMPLETED`, `C_ChallengeMode.GetChallengeCompletionInfo` (fallback `GetCompletionInfo`), `GetMapUIInfo` | |
 | Achievements | `ACHIEVEMENT_EARNED`, `GetAchievementInfo`, `GetAchievementCategory` | skips `alreadyEarned` (earned earlier on the account) |
+| Encounter Journal ids (for artwork) | `C_Map.GetBestMapForUnit`, `EJ_GetInstanceForMap`, `EJ_GetEncounterInfoByIndex` | addon ≥ 1.1; lets the website fetch the exact boss portrait and dungeon art |
 | Own notable loot | `ENCOUNTER_LOOT_RECEIVED` (own name only), `CHAT_MSG_LOOT` matched against localized `LOOT_ITEM_SELF*` globals, `C_Item.*`, `Item:ContinueOnItemLoad` | quality ≥ epic by default; other players' loot is not recorded |
 | Mounts, toys | `NEW_MOUNT_ADDED`, `C_MountJournal.GetMountInfoByID`, `NEW_TOY_ADDED`, `C_ToyBox.GetToyInfo` | |
 | Character identity | `UnitGUID`, `UnitClass`/`UnitRace` file tokens, `UnitFactionGroup`, `GetRealmName`, `GetCurrentRegion`, specialization APIs | English tokens so data is locale-independent |
@@ -46,7 +47,10 @@ function, any secret value.
     playerName, className`; if it differs, the `CHAT_MSG_LOOT` path still captures own loot),
   - that `ENCOUNTER_START/END` and `CHAT_MSG_LOOT` payloads are not secret inside instances on your patch
     (if they are, those records are skipped rather than guessed),
-  - the `## Interface:` number.
+  - the `## Interface:` number,
+  - that `EJ_GetInstanceForMap(C_Map.GetBestMapForUnit("player"))` returns the journal instance id inside
+    dungeons/raids, and that `EJ_GetEncounterInfoByIndex(i, journalInstanceID)` returns the
+    DungeonEncounterID as its 7th value (if not, the website falls back to matching by name).
 * `backend/tests/test_addon_harness.py` executes the real addon files under Lua 5.1 against a mocked WoW
   API (`backend/tests/wow_mock.lua`) and feeds the output into the backend parser and ingestion.
 

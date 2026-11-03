@@ -19,6 +19,7 @@ from app.models import (
     EventParticipant,
     EventReaction,
     GroupMembership,
+    Item,
     LootEvent,
     User,
 )
@@ -39,10 +40,11 @@ def _range(period: str, start: datetime | None, end: datetime | None) -> tuple[s
 
 
 # ----------------------------------------------------------------------------- loot museum
-def _loot_row(row: LootEvent, user: User, ch: Character | None, celebration: int) -> dict:
+def _loot_row(row: LootEvent, user: User, ch: Character | None, celebration: int, icon: str | None = None) -> dict:
     return {
         "id": str(row.id), "event_id": str(row.event_id) if row.event_id else None, "item_id": row.item_id,
-        "item_name": row.item_name, "quality": row.quality, "category": row.category, "icon_url": row.icon_url,
+        "item_name": row.item_name, "quality": row.quality, "category": row.category,
+        "icon_url": icon or row.icon_url,
         "obtained_at": row.obtained_at, "source_instance": row.source_instance, "difficulty": row.difficulty,
         "notable_reason": row.notable_reason, "is_group_first": row.is_group_first, "source": row.source,
         "is_demo": row.is_demo, "celebration": celebration,
@@ -81,8 +83,9 @@ def loot_museum(
     if category:
         conds.append(LootEvent.category.in_(category.split(",")))
     total = db.scalar(select(func.count(LootEvent.id)).where(*conds))
-    base = (select(LootEvent, User, Character).join(User, User.id == LootEvent.user_id)
-            .outerjoin(Character, Character.id == LootEvent.character_id).where(*conds))
+    base = (select(LootEvent, User, Character, Item.icon_url).join(User, User.id == LootEvent.user_id)
+            .outerjoin(Character, Character.id == LootEvent.character_id)
+            .outerjoin(Item, Item.id == LootEvent.item_id).where(*conds))
     if sort == "celebrated":
         score = (select(func.count(EventReaction.id)).where(EventReaction.event_id == LootEvent.event_id)
                  .correlate(LootEvent).scalar_subquery())
@@ -91,7 +94,8 @@ def loot_museum(
         base = base.order_by(LootEvent.obtained_at.desc() if sort == "recent" else LootEvent.obtained_at.asc())
     rows = db.execute(base.limit(limit).offset(offset)).all()
     scores = _celebration_scores(db, [r[0].event_id for r in rows])
-    return {"total": total, "items": [_loot_row(lo, u, c, scores.get(lo.event_id, 0)) for lo, u, c in rows]}
+    return {"total": total, "items": [_loot_row(lo, u, c, scores.get(lo.event_id, 0), icon)
+                                      for lo, u, c, icon in rows]}
 
 
 @router.get("/loot/highlights")
@@ -100,15 +104,17 @@ def loot_highlights(access: Access, db: DB):
     vis = stats.loot_visible(gid)
 
     def one(*conds, order):
-        r = db.execute(select(LootEvent, User, Character).join(User, User.id == LootEvent.user_id)
+        r = db.execute(select(LootEvent, User, Character, Item.icon_url).join(User, User.id == LootEvent.user_id)
                        .outerjoin(Character, Character.id == LootEvent.character_id)
+                       .outerjoin(Item, Item.id == LootEvent.item_id)
                        .where(vis, *conds).order_by(order).limit(1)).first()
-        return _loot_row(r[0], r[1], r[2], 0) if r else None
+        return _loot_row(r[0], r[1], r[2], 0, r[3]) if r else None
 
     first_legendary = one(LootEvent.quality == "legendary", order=LootEvent.obtained_at.asc())
     latest_mount = one(LootEvent.category == "mount", order=LootEvent.obtained_at.desc())
-    rows = db.execute(select(LootEvent, User, Character).join(User, User.id == LootEvent.user_id)
+    rows = db.execute(select(LootEvent, User, Character, Item.icon_url).join(User, User.id == LootEvent.user_id)
                       .outerjoin(Character, Character.id == LootEvent.character_id)
+                      .outerjoin(Item, Item.id == LootEvent.item_id)
                       .where(vis, LootEvent.event_id.is_not(None))).all()
     scores = _celebration_scores(db, [r[0].event_id for r in rows])
     celebrated = sorted(rows, key=lambda r: (-scores.get(r[0].event_id, 0), -r[0].obtained_at.timestamp()))[:4]
@@ -117,8 +123,8 @@ def loot_highlights(access: Access, db: DB):
     by_category = dict(db.execute(select(LootEvent.category, func.count(LootEvent.id)).where(vis)
                                   .group_by(LootEvent.category)).all())
     return {"first_legendary": first_legendary, "latest_mount": latest_mount,
-            "most_celebrated": [_loot_row(lo, u, c, scores.get(lo.event_id, 0))
-                                for lo, u, c in celebrated if scores.get(lo.event_id, 0) > 0],
+            "most_celebrated": [_loot_row(lo, u, c, scores.get(lo.event_id, 0), icon)
+                                for lo, u, c, icon in celebrated if scores.get(lo.event_id, 0) > 0],
             "by_quality": by_quality, "by_category": by_category}
 
 

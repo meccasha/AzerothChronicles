@@ -9,6 +9,8 @@ A private adventure journal, progression tracker and Hall of Fame for a group of
   completion dates), with **provenance on every event** and cross-reporter **de-duplication**.
 - **Statistics** aggregated server-side from recorded rows only, with explicit data-coverage notes.
 - **Hall of Fame**: 10 automatic awards + 1 voted award, weekly / monthly / seasonal / all-time, reproducible.
+- **Real game artwork**: item & achievement icons, boss portraits and dungeon/raid art from Blizzard's Game
+  Data API (needs only a free Battle.net API client), with built-in icons as fallback.
 - **Loot Museum**, member profiles, group settings (event & loot rules), integrations status page.
 - Fully usable without Blizzard credentials: a **fictional demo group** and a **mock Battle.net** adapter.
 
@@ -75,7 +77,7 @@ docs/        Architecture, schema diagram, integration notes, award rules, deplo
 ## Tests
 
 ```bash
-make test-backend   # 61 pytest tests incl. executing the real addon Lua against a mocked WoW API
+make test-backend   # 69 pytest tests incl. executing the real addon Lua against a mocked WoW API
 ```
 
 ```bash

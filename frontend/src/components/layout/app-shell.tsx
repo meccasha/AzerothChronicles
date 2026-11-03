@@ -86,7 +86,7 @@ export function AppShell({ groupId, children }: { groupId: string; children: Rea
   return (
     <div className="min-h-dvh lg:grid lg:grid-cols-[260px_1fr]">
       {/* Desktop sidebar */}
-      <aside className="sticky top-0 hidden h-dvh flex-col border-r bg-background-2/80 px-4 py-5 backdrop-blur lg:flex">
+      <aside className="sticky top-0 hidden h-dvh flex-col border-r bg-background-2 px-4 py-5 lg:flex">
         <Link href="/" className="mb-6 flex items-center gap-2.5 px-2">
           <Logo />
           <span className="font-display text-lg font-bold leading-tight gold-text">Azeroth Chronicles</span>
@@ -97,7 +97,7 @@ export function AppShell({ groupId, children }: { groupId: string; children: Rea
       </aside>
 
       {/* Mobile top bar */}
-      <header className="sticky top-0 z-40 flex items-center justify-between gap-3 border-b bg-background/90 px-4 py-2.5 backdrop-blur lg:hidden">
+      <header className="sticky top-0 z-40 flex items-center justify-between gap-3 border-b bg-background/95 px-4 py-2.5 lg:hidden">
         <Link href={base} className="flex min-w-0 items-center gap-2">
           <Logo size={26} />
           <span className="truncate font-display text-sm font-semibold gold-text">{group?.name ?? "Azeroth Chronicles"}</span>
@@ -133,7 +133,7 @@ export function AppShell({ groupId, children }: { groupId: string; children: Rea
       </main>
 
       {/* Mobile bottom nav */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t bg-background/95 backdrop-blur lg:hidden" aria-label="Quick">
+      <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t bg-background/95 lg:hidden" aria-label="Quick">
         {MOBILE_NAV.map(({ href, label, icon: Icon }) => (
           <Link key={href} href={base + href} className={cn("flex flex-col items-center gap-0.5 py-2 text-[10px] text-muted-foreground", isActive(href) && "text-gold-bright")}>
             <Icon className="size-5" />

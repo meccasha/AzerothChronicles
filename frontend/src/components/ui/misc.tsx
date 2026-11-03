@@ -22,10 +22,11 @@ export function Switch({ className, ...props }: React.ComponentProps<typeof S.Ro
   );
 }
 
+export const TooltipProvider = T.Provider;
+
 export function Tip({ content, children }: { content: React.ReactNode; children: React.ReactNode }) {
   return (
-    <T.Provider delayDuration={200}>
-      <T.Root>
+    <T.Root>
         <T.Trigger asChild>{children}</T.Trigger>
         <T.Portal>
           <T.Content
@@ -37,7 +38,6 @@ export function Tip({ content, children }: { content: React.ReactNode; children:
           </T.Content>
         </T.Portal>
       </T.Root>
-    </T.Provider>
   );
 }
 
